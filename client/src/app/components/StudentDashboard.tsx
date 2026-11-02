@@ -3,7 +3,8 @@ import { Button } from './ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { Badge } from './ui/badge';
 import { Progress } from './ui/progress';
-import { Clock, Calendar, Award, TrendingUp, Home, BookOpen } from 'lucide-react';
+import { Nav } from './Nav';
+import { Clock, Calendar, Award, TrendingUp } from 'lucide-react';
 
 const upcomingExams = [
   {
@@ -13,7 +14,7 @@ const upcomingExams = [
     time: '10:00 AM',
     duration: '120 min',
     questions: 50,
-    status: 'scheduled'
+    status: 'scheduled',
   },
   {
     id: 2,
@@ -22,7 +23,7 @@ const upcomingExams = [
     time: '2:00 PM',
     duration: '90 min',
     questions: 40,
-    status: 'scheduled'
+    status: 'scheduled',
   },
   {
     id: 3,
@@ -31,8 +32,8 @@ const upcomingExams = [
     time: '11:00 AM',
     duration: '150 min',
     questions: 60,
-    status: 'scheduled'
-  }
+    status: 'scheduled',
+  },
 ];
 
 const completedExams = [
@@ -42,7 +43,7 @@ const completedExams = [
     date: '2026-06-10',
     score: 85,
     totalMarks: 100,
-    status: 'completed'
+    status: 'completed',
   },
   {
     id: 5,
@@ -50,7 +51,7 @@ const completedExams = [
     date: '2026-06-08',
     score: 92,
     totalMarks: 100,
-    status: 'completed'
+    status: 'completed',
   },
   {
     id: 6,
@@ -58,8 +59,8 @@ const completedExams = [
     date: '2026-06-05',
     score: 78,
     totalMarks: 100,
-    status: 'completed'
-  }
+    status: 'completed',
+  },
 ];
 
 export function StudentDashboard() {
@@ -68,40 +69,19 @@ export function StudentDashboard() {
   );
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-indigo-50">
-      {/* Header */}
-      <nav className="bg-white border-b shadow-sm">
-        <div className="container mx-auto px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-6">
-              <Link to="/" className="flex items-center gap-2">
-                <Home className="h-5 w-5 text-indigo-600" />
-                <span className="text-xl font-bold text-indigo-600">ExamGuard</span>
-              </Link>
-              <div className="flex gap-4">
-                <Button variant="ghost" className="text-indigo-600">
-                  <BookOpen className="h-4 w-4 mr-2" />
-                  My Exams
-                </Button>
-                <Link to="/results">
-                  <Button variant="ghost">Results</Button>
-                </Link>
-              </div>
-            </div>
-            <div className="flex items-center gap-4">
-              <span className="text-sm">Welcome, <strong>John Doe</strong></span>
-              <div className="w-10 h-10 bg-indigo-600 rounded-full flex items-center justify-center text-white font-bold">
-                JD
-              </div>
-            </div>
-          </div>
-        </div>
-      </nav>
+    <div className="min-h-screen bg-background text-foreground">
+      <Nav
+        initials="JD"
+        userLabel="Welcome, John Doe"
+        links={[
+          { to: '/student', label: 'My Exams', active: true },
+          { to: '/results', label: 'Results' },
+        ]}
+      />
 
-      {/* Main Content */}
-      <div className="container mx-auto px-6 py-8">
-        {/* Stats Overview */}
-        <div className="grid md:grid-cols-4 gap-6 mb-8">
+      <main className="mx-auto max-w-[1600px] px-8 py-8 lg:px-12">
+        {/* Stats */}
+        <div className="mb-8 grid gap-6 md:grid-cols-2 lg:grid-cols-4">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground">
@@ -111,24 +91,18 @@ export function StudentDashboard() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{upcomingExams.length}</div>
-              <p className="text-xs text-muted-foreground mt-1">
-                Scheduled this month
-              </p>
+              <p className="mt-1 text-xs text-muted-foreground">Scheduled this month</p>
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">
-                Completed
-              </CardTitle>
+              <CardTitle className="text-sm font-medium text-muted-foreground">Completed</CardTitle>
               <Award className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{completedExams.length}</div>
-              <p className="text-xs text-muted-foreground mt-1">
-                Exams finished
-              </p>
+              <p className="mt-1 text-xs text-muted-foreground">Exams finished</p>
             </CardContent>
           </Card>
 
@@ -141,35 +115,29 @@ export function StudentDashboard() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{averageScore}%</div>
-              <p className="text-xs text-muted-foreground mt-1">
-                Overall performance
-              </p>
+              <p className="mt-1 text-xs text-muted-foreground">Overall performance</p>
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">
-                Time Spent
-              </CardTitle>
+              <CardTitle className="text-sm font-medium text-muted-foreground">Time Spent</CardTitle>
               <Clock className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">6.5h</div>
-              <p className="text-xs text-muted-foreground mt-1">
-                Total exam time
-              </p>
+              <p className="mt-1 text-xs text-muted-foreground">Total exam time</p>
             </CardContent>
           </Card>
         </div>
 
-        <div className="grid lg:grid-cols-3 gap-8">
-          {/* Upcoming Exams */}
-          <div className="lg:col-span-2">
-            <h2 className="text-2xl font-bold mb-4">Upcoming Exams</h2>
+        <div className="grid gap-8 lg:grid-cols-3">
+          {/* Upcoming exams */}
+          <section className="lg:col-span-2">
+            <h2 className="mb-4 text-2xl font-bold">Upcoming Exams</h2>
             <div className="space-y-4">
               {upcomingExams.map((exam) => (
-                <Card key={exam.id} className="hover:shadow-lg transition-shadow">
+                <Card key={exam.id} className="transition-colors hover:border-primary/40">
                   <CardHeader>
                     <div className="flex items-start justify-between">
                       <div>
@@ -187,7 +155,7 @@ export function StudentDashboard() {
                           </span>
                         </CardDescription>
                       </div>
-                      <Badge className="bg-green-100 text-green-800 hover:bg-green-200">
+                      <Badge variant="outline" className="border-primary/30 bg-primary/10 text-primary">
                         Scheduled
                       </Badge>
                     </div>
@@ -206,11 +174,11 @@ export function StudentDashboard() {
                 </Card>
               ))}
             </div>
-          </div>
+          </section>
 
-          {/* Recent Results */}
-          <div>
-            <h2 className="text-2xl font-bold mb-4">Recent Results</h2>
+          {/* Recent results */}
+          <section>
+            <h2 className="mb-4 text-2xl font-bold">Recent Results</h2>
             <div className="space-y-4">
               {completedExams.map((exam) => (
                 <Card key={exam.id}>
@@ -229,7 +197,9 @@ export function StudentDashboard() {
                       <Progress value={exam.score} />
                       <div className="text-right">
                         <Badge
-                          variant={exam.score >= 80 ? 'default' : exam.score >= 60 ? 'secondary' : 'destructive'}
+                          variant={
+                            exam.score >= 80 ? 'default' : exam.score >= 60 ? 'secondary' : 'destructive'
+                          }
                         >
                           {exam.score >= 80 ? 'Excellent' : exam.score >= 60 ? 'Good' : 'Needs Improvement'}
                         </Badge>
@@ -238,15 +208,15 @@ export function StudentDashboard() {
                   </CardContent>
                 </Card>
               ))}
-              <Link to="/results">
+              <Link to="/results" className="block">
                 <Button variant="outline" className="w-full">
                   View All Results
                 </Button>
               </Link>
             </div>
-          </div>
+          </section>
         </div>
-      </div>
+      </main>
     </div>
   );
 }

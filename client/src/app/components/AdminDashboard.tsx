@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { Link } from 'react-router';
 import { Button } from './ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { Input } from './ui/input';
@@ -9,35 +8,42 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 import { Badge } from './ui/badge';
 import { Progress } from './ui/progress';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from './ui/dialog';
-import { 
-  Home, 
-  Plus, 
-  FileText, 
-  Users, 
-  BarChart3, 
-  Settings,
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from './ui/dialog';
+import { Nav } from './Nav';
+import {
+  Plus,
+  FileText,
+  Users,
+  BarChart3,
   Calendar,
   Clock,
   Edit,
   Trash2,
   Eye,
   Download,
-  Upload
+  Upload,
 } from 'lucide-react';
 import { toast } from 'sonner';
-import { 
-  BarChart, 
-  Bar, 
-  LineChart, 
+import {
+  BarChart,
+  Bar,
+  LineChart,
   Line,
-  XAxis, 
-  YAxis, 
-  CartesianGrid, 
-  Tooltip, 
-  Legend, 
-  ResponsiveContainer 
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
 } from 'recharts';
+import { axisStroke, colors, cursorStyle, gridStroke, legendStyle, tooltipStyle } from './chartTheme';
 
 const exams = [
   {
@@ -49,7 +55,7 @@ const exams = [
     totalQuestions: 50,
     enrolled: 150,
     completed: 145,
-    status: 'upcoming'
+    status: 'upcoming',
   },
   {
     id: 2,
@@ -60,7 +66,7 @@ const exams = [
     totalQuestions: 40,
     enrolled: 148,
     completed: 0,
-    status: 'upcoming'
+    status: 'upcoming',
   },
   {
     id: 3,
@@ -71,15 +77,15 @@ const exams = [
     totalQuestions: 40,
     enrolled: 145,
     completed: 145,
-    status: 'completed'
-  }
+    status: 'completed',
+  },
 ];
 
 const performanceData = [
   { examName: 'DSA', avgScore: 76, passRate: 85 },
   { examName: 'Web Dev', avgScore: 82, passRate: 92 },
   { examName: 'Networks', avgScore: 78, passRate: 88 },
-  { examName: 'SE', avgScore: 74, passRate: 82 }
+  { examName: 'SE', avgScore: 74, passRate: 82 },
 ];
 
 const enrollmentTrend = [
@@ -88,76 +94,66 @@ const enrollmentTrend = [
   { month: 'Mar', students: 142 },
   { month: 'Apr', students: 148 },
   { month: 'May', students: 155 },
-  { month: 'Jun', students: 150 }
+  { month: 'Jun', students: 150 },
 ];
+
+const sampleQuestions = [
+  { subject: 'DSA', question: 'What is the time complexity of binary search?', difficulty: 'Medium' },
+  { subject: 'DSA', question: 'Which data structure uses LIFO principle?', difficulty: 'Easy' },
+  { subject: 'Web', question: 'What is the purpose of useState hook?', difficulty: 'Medium' },
+  { subject: 'DB', question: 'Explain ACID properties', difficulty: 'Hard' },
+];
+
+const recentActivity = [
+  { student: 'John Doe', exam: 'Web Development', score: 85, time: '2 hours ago' },
+  { student: 'Jane Smith', exam: 'Data Structures', score: 92, time: '3 hours ago' },
+  { student: 'Mike Johnson', exam: 'Computer Networks', score: 78, time: '5 hours ago' },
+  { student: 'Sarah Williams', exam: 'Software Engineering', score: 88, time: '6 hours ago' },
+];
+
+const emptyExam = {
+  title: '',
+  date: '',
+  time: '',
+  duration: '',
+  totalQuestions: '',
+  description: '',
+};
 
 export function AdminDashboard() {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
-  const [newExam, setNewExam] = useState({
-    title: '',
-    date: '',
-    time: '',
-    duration: '',
-    totalQuestions: '',
-    description: ''
-  });
+  const [newExam, setNewExam] = useState(emptyExam);
 
   const handleCreateExam = () => {
     toast.success('Exam Created!', {
-      description: `${newExam.title} has been scheduled successfully.`
+      description: `${newExam.title} has been scheduled successfully.`,
     });
     setIsCreateDialogOpen(false);
-    setNewExam({
-      title: '',
-      date: '',
-      time: '',
-      duration: '',
-      totalQuestions: '',
-      description: ''
-    });
+    setNewExam(emptyExam);
   };
 
   const totalStudents = 150;
   const totalExams = exams.length;
-  const activeExams = exams.filter(e => e.status === 'upcoming').length;
+  const activeExams = exams.filter((e) => e.status === 'upcoming').length;
   const avgScore = 77;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-purple-50">
-      {/* Header */}
-      <nav className="bg-white border-b shadow-sm">
-        <div className="container mx-auto px-6 py-4">
-          <div className="flex items-center justify-between">
-            <Link to="/" className="flex items-center gap-2">
-              <Home className="h-5 w-5 text-indigo-600" />
-              <span className="text-xl font-bold text-indigo-600">ExamGuard Admin</span>
-            </Link>
-            <div className="flex items-center gap-4">
-              <Button variant="ghost">
-                <Settings className="h-4 w-4 mr-2" />
-                Settings
-              </Button>
-              <div className="w-10 h-10 bg-purple-600 rounded-full flex items-center justify-center text-white font-bold">
-                AD
-              </div>
-            </div>
-          </div>
-        </div>
-      </nav>
+    <div className="min-h-screen bg-background text-foreground">
+      <Nav section="Admin" initials="AD" />
 
-      <div className="container mx-auto px-6 py-8">
-        {/* Page Header */}
-        <div className="flex items-center justify-between mb-8">
+      <main className="mx-auto max-w-[1600px] px-8 py-8 lg:px-12">
+        {/* Page header */}
+        <div className="mb-8 flex flex-wrap items-center justify-between gap-4">
           <div>
-            <h1 className="text-3xl font-bold mb-2">Admin Dashboard</h1>
+            <h1 className="mb-2 text-3xl font-bold">Admin Dashboard</h1>
             <p className="text-muted-foreground">
               Manage exams, monitor students, and analyze performance
             </p>
           </div>
           <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
             <DialogTrigger asChild>
-              <Button size="lg" className="bg-indigo-600 hover:bg-indigo-700">
-                <Plus className="h-5 w-5 mr-2" />
+              <Button size="lg">
+                <Plus className="mr-2 h-5 w-5" />
                 Create New Exam
               </Button>
             </DialogTrigger>
@@ -175,7 +171,7 @@ export function AdminDashboard() {
                     id="title"
                     placeholder="e.g., Data Structures & Algorithms"
                     value={newExam.title}
-                    onChange={(e) => setNewExam({...newExam, title: e.target.value})}
+                    onChange={(e) => setNewExam({ ...newExam, title: e.target.value })}
                   />
                 </div>
                 <div className="grid grid-cols-2 gap-4">
@@ -185,7 +181,7 @@ export function AdminDashboard() {
                       id="date"
                       type="date"
                       value={newExam.date}
-                      onChange={(e) => setNewExam({...newExam, date: e.target.value})}
+                      onChange={(e) => setNewExam({ ...newExam, date: e.target.value })}
                     />
                   </div>
                   <div className="grid gap-2">
@@ -194,7 +190,7 @@ export function AdminDashboard() {
                       id="time"
                       type="time"
                       value={newExam.time}
-                      onChange={(e) => setNewExam({...newExam, time: e.target.value})}
+                      onChange={(e) => setNewExam({ ...newExam, time: e.target.value })}
                     />
                   </div>
                 </div>
@@ -206,7 +202,7 @@ export function AdminDashboard() {
                       type="number"
                       placeholder="90"
                       value={newExam.duration}
-                      onChange={(e) => setNewExam({...newExam, duration: e.target.value})}
+                      onChange={(e) => setNewExam({ ...newExam, duration: e.target.value })}
                     />
                   </div>
                   <div className="grid gap-2">
@@ -216,7 +212,7 @@ export function AdminDashboard() {
                       type="number"
                       placeholder="40"
                       value={newExam.totalQuestions}
-                      onChange={(e) => setNewExam({...newExam, totalQuestions: e.target.value})}
+                      onChange={(e) => setNewExam({ ...newExam, totalQuestions: e.target.value })}
                     />
                   </div>
                 </div>
@@ -226,7 +222,7 @@ export function AdminDashboard() {
                     id="description"
                     placeholder="Exam description and instructions..."
                     value={newExam.description}
-                    onChange={(e) => setNewExam({...newExam, description: e.target.value})}
+                    onChange={(e) => setNewExam({ ...newExam, description: e.target.value })}
                   />
                 </div>
               </div>
@@ -240,70 +236,54 @@ export function AdminDashboard() {
           </Dialog>
         </div>
 
-        {/* Stats Overview */}
-        <div className="grid md:grid-cols-4 gap-6 mb-8">
+        {/* Stats */}
+        <div className="mb-8 grid gap-6 md:grid-cols-2 lg:grid-cols-4">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">
-                Total Students
-              </CardTitle>
+              <CardTitle className="text-sm font-medium text-muted-foreground">Total Students</CardTitle>
               <Users className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
               <div className="text-3xl font-bold">{totalStudents}</div>
-              <p className="text-xs text-green-600 mt-1">
-                +12 this week
-              </p>
+              <p className="mt-1 text-xs text-primary">+12 this week</p>
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">
-                Total Exams
-              </CardTitle>
+              <CardTitle className="text-sm font-medium text-muted-foreground">Total Exams</CardTitle>
               <FileText className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
               <div className="text-3xl font-bold">{totalExams}</div>
-              <p className="text-xs text-muted-foreground mt-1">
-                {activeExams} active
-              </p>
+              <p className="mt-1 text-xs text-muted-foreground">{activeExams} active</p>
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">
-                Average Score
-              </CardTitle>
+              <CardTitle className="text-sm font-medium text-muted-foreground">Average Score</CardTitle>
               <BarChart3 className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
               <div className="text-3xl font-bold">{avgScore}%</div>
-              <p className="text-xs text-green-600 mt-1">
-                +3% improvement
-              </p>
+              <p className="mt-1 text-xs text-primary">+3% improvement</p>
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">
-                Pass Rate
-              </CardTitle>
+              <CardTitle className="text-sm font-medium text-muted-foreground">Pass Rate</CardTitle>
               <BarChart3 className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
               <div className="text-3xl font-bold">87%</div>
-              <p className="text-xs text-muted-foreground mt-1">
-                Overall success rate
-              </p>
+              <p className="mt-1 text-xs text-muted-foreground">Overall success rate</p>
             </CardContent>
           </Card>
         </div>
 
-        {/* Main Content */}
+        {/* Tabs */}
         <Tabs defaultValue="exams" className="space-y-6">
           <TabsList>
             <TabsTrigger value="exams">Exams</TabsTrigger>
@@ -311,10 +291,10 @@ export function AdminDashboard() {
             <TabsTrigger value="analytics">Analytics</TabsTrigger>
           </TabsList>
 
-          {/* Exams Tab */}
+          {/* Exams */}
           <TabsContent value="exams" className="space-y-4">
             {exams.map((exam) => (
-              <Card key={exam.id} className="hover:shadow-lg transition-shadow">
+              <Card key={exam.id} className="transition-colors hover:border-primary/40">
                 <CardHeader>
                   <div className="flex items-start justify-between">
                     <div>
@@ -336,7 +316,7 @@ export function AdminDashboard() {
                   </div>
                 </CardHeader>
                 <CardContent>
-                  <div className="grid md:grid-cols-4 gap-4 mb-4">
+                  <div className="mb-4 grid gap-4 md:grid-cols-4">
                     <div>
                       <p className="text-sm text-muted-foreground">Duration</p>
                       <p className="text-lg font-bold">{exam.duration} min</p>
@@ -356,30 +336,34 @@ export function AdminDashboard() {
                   </div>
                   {exam.status === 'completed' && (
                     <div className="mb-4">
-                      <div className="flex justify-between text-sm mb-2">
+                      <div className="mb-2 flex justify-between text-sm">
                         <span>Completion Rate</span>
                         <span>{Math.round((exam.completed / exam.enrolled) * 100)}%</span>
                       </div>
                       <Progress value={(exam.completed / exam.enrolled) * 100} />
                     </div>
                   )}
-                  <div className="flex gap-2">
+                  <div className="flex flex-wrap gap-2">
                     <Button variant="outline" size="sm">
-                      <Eye className="h-4 w-4 mr-2" />
+                      <Eye className="mr-2 h-4 w-4" />
                       View Details
                     </Button>
                     <Button variant="outline" size="sm">
-                      <Edit className="h-4 w-4 mr-2" />
+                      <Edit className="mr-2 h-4 w-4" />
                       Edit
                     </Button>
                     {exam.status === 'completed' && (
                       <Button variant="outline" size="sm">
-                        <Download className="h-4 w-4 mr-2" />
+                        <Download className="mr-2 h-4 w-4" />
                         Export Results
                       </Button>
                     )}
-                    <Button variant="outline" size="sm" className="text-red-600 hover:text-red-700">
-                      <Trash2 className="h-4 w-4 mr-2" />
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="text-red-400 hover:bg-red-400/10 hover:text-red-300"
+                    >
+                      <Trash2 className="mr-2 h-4 w-4" />
                       Delete
                     </Button>
                   </div>
@@ -388,9 +372,9 @@ export function AdminDashboard() {
             ))}
           </TabsContent>
 
-          {/* Question Bank Tab */}
+          {/* Question bank */}
           <TabsContent value="questions">
-            <div className="grid lg:grid-cols-3 gap-6">
+            <div className="grid gap-6 lg:grid-cols-3">
               <Card className="lg:col-span-2">
                 <CardHeader>
                   <CardTitle>Question Bank</CardTitle>
@@ -412,25 +396,31 @@ export function AdminDashboard() {
                         </SelectContent>
                       </Select>
                       <Button>
-                        <Upload className="h-4 w-4 mr-2" />
+                        <Upload className="mr-2 h-4 w-4" />
                         Import
                       </Button>
                     </div>
 
                     <div className="space-y-3">
-                      {[
-                        { subject: 'DSA', question: 'What is the time complexity of binary search?', difficulty: 'Medium' },
-                        { subject: 'DSA', question: 'Which data structure uses LIFO principle?', difficulty: 'Easy' },
-                        { subject: 'Web', question: 'What is the purpose of useState hook?', difficulty: 'Medium' },
-                        { subject: 'DB', question: 'Explain ACID properties', difficulty: 'Hard' }
-                      ].map((q, idx) => (
-                        <div key={idx} className="p-4 border rounded-lg hover:bg-slate-50 transition-colors">
+                      {sampleQuestions.map((q, idx) => (
+                        <div
+                          key={idx}
+                          className="rounded-lg border border-border p-4 transition-colors hover:bg-accent/50"
+                        >
                           <div className="flex items-start justify-between">
                             <div className="flex-1">
-                              <div className="flex items-center gap-2 mb-1">
-                                <Badge variant="outline" className="text-xs">{q.subject}</Badge>
-                                <Badge 
-                                  variant={q.difficulty === 'Easy' ? 'default' : q.difficulty === 'Medium' ? 'secondary' : 'destructive'}
+                              <div className="mb-1 flex items-center gap-2">
+                                <Badge variant="outline" className="text-xs">
+                                  {q.subject}
+                                </Badge>
+                                <Badge
+                                  variant={
+                                    q.difficulty === 'Easy'
+                                      ? 'default'
+                                      : q.difficulty === 'Medium'
+                                      ? 'secondary'
+                                      : 'destructive'
+                                  }
                                   className="text-xs"
                                 >
                                   {q.difficulty}
@@ -442,7 +432,7 @@ export function AdminDashboard() {
                               <Button variant="ghost" size="sm">
                                 <Edit className="h-4 w-4" />
                               </Button>
-                              <Button variant="ghost" size="sm" className="text-red-600">
+                              <Button variant="ghost" size="sm" className="text-red-400 hover:text-red-300">
                                 <Trash2 className="h-4 w-4" />
                               </Button>
                             </div>
@@ -460,11 +450,11 @@ export function AdminDashboard() {
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div>
-                    <p className="text-sm text-muted-foreground mb-1">Total Questions</p>
+                    <p className="mb-1 text-sm text-muted-foreground">Total Questions</p>
                     <p className="text-2xl font-bold">245</p>
                   </div>
                   <div>
-                    <p className="text-sm text-muted-foreground mb-1">By Difficulty</p>
+                    <p className="mb-1 text-sm text-muted-foreground">By Difficulty</p>
                     <div className="space-y-2">
                       <div className="flex justify-between text-sm">
                         <span>Easy</span>
@@ -481,7 +471,7 @@ export function AdminDashboard() {
                     </div>
                   </div>
                   <Button className="w-full">
-                    <Plus className="h-4 w-4 mr-2" />
+                    <Plus className="mr-2 h-4 w-4" />
                     Add Question
                   </Button>
                 </CardContent>
@@ -489,9 +479,9 @@ export function AdminDashboard() {
             </div>
           </TabsContent>
 
-          {/* Analytics Tab */}
+          {/* Analytics */}
           <TabsContent value="analytics">
-            <div className="grid lg:grid-cols-2 gap-6">
+            <div className="grid gap-6 lg:grid-cols-2">
               <Card>
                 <CardHeader>
                   <CardTitle>Exam Performance</CardTitle>
@@ -500,13 +490,13 @@ export function AdminDashboard() {
                 <CardContent>
                   <ResponsiveContainer width="100%" height={300}>
                     <BarChart data={performanceData}>
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey="examName" />
-                      <YAxis />
-                      <Tooltip />
-                      <Legend />
-                      <Bar key="avgScore" dataKey="avgScore" fill="#6366f1" name="Avg Score" radius={[8, 8, 0, 0]} />
-                      <Bar key="passRate" dataKey="passRate" fill="#10b981" name="Pass Rate %" radius={[8, 8, 0, 0]} />
+                      <CartesianGrid strokeDasharray="3 3" stroke={gridStroke} />
+                      <XAxis dataKey="examName" stroke={axisStroke} />
+                      <YAxis stroke={axisStroke} />
+                      <Tooltip contentStyle={tooltipStyle} cursor={cursorStyle} />
+                      <Legend wrapperStyle={legendStyle} />
+                      <Bar dataKey="avgScore" fill={colors.green} name="Avg Score" radius={[8, 8, 0, 0]} />
+                      <Bar dataKey="passRate" fill={colors.blue} name="Pass Rate %" radius={[8, 8, 0, 0]} />
                     </BarChart>
                   </ResponsiveContainer>
                 </CardContent>
@@ -520,16 +510,16 @@ export function AdminDashboard() {
                 <CardContent>
                   <ResponsiveContainer width="100%" height={300}>
                     <LineChart data={enrollmentTrend}>
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey="month" />
-                      <YAxis />
-                      <Tooltip />
-                      <Line 
-                        type="monotone" 
-                        dataKey="students" 
-                        stroke="#8b5cf6" 
+                      <CartesianGrid strokeDasharray="3 3" stroke={gridStroke} />
+                      <XAxis dataKey="month" stroke={axisStroke} />
+                      <YAxis stroke={axisStroke} />
+                      <Tooltip contentStyle={tooltipStyle} />
+                      <Line
+                        type="monotone"
+                        dataKey="students"
+                        stroke={colors.green}
                         strokeWidth={3}
-                        dot={{ fill: '#8b5cf6', r: 6 }}
+                        dot={{ fill: colors.green, r: 6 }}
                       />
                     </LineChart>
                   </ResponsiveContainer>
@@ -543,16 +533,17 @@ export function AdminDashboard() {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-3">
-                    {[
-                      { student: 'John Doe', exam: 'Web Development', score: 85, time: '2 hours ago' },
-                      { student: 'Jane Smith', exam: 'Data Structures', score: 92, time: '3 hours ago' },
-                      { student: 'Mike Johnson', exam: 'Computer Networks', score: 78, time: '5 hours ago' },
-                      { student: 'Sarah Williams', exam: 'Software Engineering', score: 88, time: '6 hours ago' }
-                    ].map((activity, idx) => (
-                      <div key={idx} className="flex items-center justify-between p-3 border rounded-lg">
+                    {recentActivity.map((activity, idx) => (
+                      <div
+                        key={idx}
+                        className="flex items-center justify-between rounded-lg border border-border p-3"
+                      >
                         <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 bg-indigo-100 rounded-full flex items-center justify-center font-bold text-indigo-600">
-                            {activity.student.split(' ').map(n => n[0]).join('')}
+                          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 font-bold text-primary">
+                            {activity.student
+                              .split(' ')
+                              .map((n) => n[0])
+                              .join('')}
                           </div>
                           <div>
                             <p className="font-medium">{activity.student}</p>
@@ -563,7 +554,7 @@ export function AdminDashboard() {
                           <Badge variant={activity.score >= 80 ? 'default' : 'secondary'}>
                             {activity.score}%
                           </Badge>
-                          <p className="text-xs text-muted-foreground mt-1">{activity.time}</p>
+                          <p className="mt-1 text-xs text-muted-foreground">{activity.time}</p>
                         </div>
                       </div>
                     ))}
@@ -573,7 +564,7 @@ export function AdminDashboard() {
             </div>
           </TabsContent>
         </Tabs>
-      </div>
+      </main>
     </div>
   );
 }

@@ -1,230 +1,112 @@
 import { Link } from 'react-router';
-import { Button } from './ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
-import { Shield, Video, Clock, BarChart3, CheckCircle2, Lock, Users, FileText } from 'lucide-react';
-import { ImageWithFallback } from './figma/ImageWithFallback';
+import { Shield, Camera, Maximize, Eye, Clock, BarChart3, Lock, ArrowRight } from 'lucide-react';
+
+const checks = [
+  { icon: Camera, title: 'Face check', text: 'The webcam confirms exactly one person is in frame for the whole exam.' },
+  { icon: Maximize, title: 'Fullscreen lock', text: 'Leaving fullscreen is logged as a violation the moment it happens.' },
+  { icon: Eye, title: 'Tab-switch detection', text: 'Switching tabs or windows is caught and timestamped.' },
+  { icon: Lock, title: 'Copy and paste blocked', text: 'Copy, paste and right-click are disabled during the exam.' },
+  { icon: Clock, title: 'Auto-submit', text: 'Too many violations, or the timer running out, submits the exam.' },
+  { icon: BarChart3, title: 'Reports for admins', text: 'Scores and a per-student violation log, ready to review.' },
+];
+
+const log = [
+  { time: '10:02:14', event: 'Exam started', level: 'ok' },
+  { time: '10:09:41', event: 'Tab switch detected', level: 'warn' },
+  { time: '10:15:03', event: 'No face in frame', level: 'warn' },
+  { time: '10:15:09', event: 'Face restored', level: 'ok' },
+  { time: '10:21:58', event: 'Fullscreen exited', level: 'bad' },
+];
+
+const dot: Record<string, string> = {
+  ok: 'bg-emerald-400',
+  warn: 'bg-amber-400',
+  bad: 'bg-red-500',
+};
 
 export function LandingPage() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-950 via-purple-900 to-slate-900 relative overflow-hidden">
-      {/* Animated background */}
-      <div className="absolute inset-0 opacity-20">
-        <div className="absolute top-0 -left-4 w-96 h-96 bg-purple-500 rounded-full mix-blend-multiply filter blur-3xl animate-blob"></div>
-        <div className="absolute top-0 -right-4 w-96 h-96 bg-indigo-500 rounded-full mix-blend-multiply filter blur-3xl animate-blob animation-delay-2000"></div>
-        <div className="absolute -bottom-8 left-20 w-96 h-96 bg-pink-500 rounded-full mix-blend-multiply filter blur-3xl animate-blob animation-delay-4000"></div>
-      </div>
-
-      {/* Header */}
-      <nav className="relative z-10 container mx-auto px-6 py-6">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Shield className="h-8 w-8 text-indigo-400" />
-            <span className="text-2xl font-bold text-white">ExamGuard</span>
-          </div>
-          <div className="flex gap-4">
-            <Link to="/student">
-              <Button variant="ghost" className="text-white hover:text-indigo-300">
-                Student Portal
-              </Button>
-            </Link>
-            <Link to="/admin">
-              <Button variant="outline" className="border-indigo-400 text-white hover:bg-indigo-900">
-                Admin Dashboard
-              </Button>
-            </Link>
-          </div>
+    <div className="min-h-screen bg-neutral-950 text-neutral-100">
+      <header className="mx-auto flex max-w-[1600px] items-center justify-between px-8 lg:px-12 py-5">
+        <div className="flex items-center gap-2 text-lg font-semibold">
+          <Shield className="h-6 w-6 text-emerald-400" />
+          CheatBlock
         </div>
-      </nav>
+        <nav className="flex items-center gap-6 text-sm text-neutral-400">
+          <Link to="/student" className="hover:text-white">Student</Link>
+          <Link to="/admin" className="hover:text-white">Admin</Link>
+        </nav>
+      </header>
 
-      {/* Hero Section */}
-      <section className="relative z-10 container mx-auto px-6 py-20">
-        <div className="grid lg:grid-cols-2 gap-12 items-center">
+      <main>
+        <section className="mx-auto grid max-w-[1600px] items-center gap-12 px-8 lg:px-12 pb-20 pt-16 lg:grid-cols-2">
           <div>
-            <h1 className="text-5xl lg:text-6xl font-bold text-white mb-6 leading-tight">
-              Secure Online Examination Platform
+            <p className="mb-4 text-sm font-medium uppercase tracking-widest text-emerald-400">
+              Online exam proctoring
+            </p>
+            <h1 className="text-5xl font-bold leading-tight sm:text-6xl">
+              Exams you can trust. Cheating, blocked.
             </h1>
-            <p className="text-xl text-indigo-200 mb-8">
-              Conduct exams with confidence using our advanced proctoring technology, 
-              automated evaluation, and comprehensive analytics.
+            <p className="mt-6 max-w-lg text-lg text-neutral-400">
+              CheatBlock watches the webcam, the screen and the browser during an exam,
+              and keeps a timestamped record of everything that looks wrong.
             </p>
-            <div className="flex gap-4">
-              <Link to="/student">
-                <Button size="lg" className="bg-indigo-600 hover:bg-indigo-700 text-white">
-                  Take Exam
-                </Button>
+            <div className="mt-8 flex flex-wrap gap-4">
+              <Link
+                to="/student"
+                className="inline-flex items-center gap-2 rounded-lg bg-emerald-400 px-8 lg:px-12 py-3 font-semibold text-neutral-950 hover:bg-emerald-300"
+              >
+                Start an exam <ArrowRight className="h-4 w-4" />
               </Link>
-              <Link to="/admin">
-                <Button size="lg" variant="outline" className="border-white text-white hover:bg-white/10">
-                  Create Exam
-                </Button>
-              </Link>
-            </div>
-            <div className="mt-8 flex gap-8">
-              <div>
-                <div className="text-3xl font-bold text-white">10K+</div>
-                <div className="text-indigo-300">Exams Conducted</div>
-              </div>
-              <div>
-                <div className="text-3xl font-bold text-white">99.9%</div>
-                <div className="text-indigo-300">Uptime</div>
-              </div>
-              <div>
-                <div className="text-3xl font-bold text-white">50K+</div>
-                <div className="text-indigo-300">Students</div>
-              </div>
-            </div>
-          </div>
-          <div className="relative">
-            <div className="absolute -inset-4 bg-gradient-to-r from-indigo-500 to-purple-500 rounded-2xl blur-2xl opacity-30"></div>
-            <ImageWithFallback 
-              src="https://images.unsplash.com/photo-1513258496099-48168024aec0?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxzdHVkZW50JTIwc3R1ZHlpbmclMjBjb21wdXRlcnxlbnwxfHx8fDE3ODE2MjAwNzd8MA&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral"
-              alt="Student taking online exam"
-              className="relative rounded-2xl shadow-2xl w-full"
-            />
-          </div>
-        </div>
-      </section>
-
-      {/* Features Section */}
-      <section className="relative z-10 container mx-auto px-6 py-20">
-        <h2 className="text-4xl font-bold text-white text-center mb-4">
-          Powerful Features
-        </h2>
-        <p className="text-xl text-indigo-200 text-center mb-12">
-          Everything you need for secure and efficient online examinations
-        </p>
-
-        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-          <Card className="bg-white/10 backdrop-blur-lg border-white/20 hover:bg-white/20 transition-all">
-            <CardHeader>
-              <Clock className="h-12 w-12 text-indigo-400 mb-4" />
-              <CardTitle className="text-white">Timed Exams</CardTitle>
-              <CardDescription className="text-indigo-200">
-                Automatic timers with customizable duration and warnings
-              </CardDescription>
-            </CardHeader>
-          </Card>
-
-          <Card className="bg-white/10 backdrop-blur-lg border-white/20 hover:bg-white/20 transition-all">
-            <CardHeader>
-              <Video className="h-12 w-12 text-indigo-400 mb-4" />
-              <CardTitle className="text-white">AI Proctoring</CardTitle>
-              <CardDescription className="text-indigo-200">
-                Real-time webcam monitoring and suspicious activity detection
-              </CardDescription>
-            </CardHeader>
-          </Card>
-
-          <Card className="bg-white/10 backdrop-blur-lg border-white/20 hover:bg-white/20 transition-all">
-            <CardHeader>
-              <CheckCircle2 className="h-12 w-12 text-indigo-400 mb-4" />
-              <CardTitle className="text-white">Auto Evaluation</CardTitle>
-              <CardDescription className="text-indigo-200">
-                Instant grading for MCQs and automated scoring
-              </CardDescription>
-            </CardHeader>
-          </Card>
-
-          <Card className="bg-white/10 backdrop-blur-lg border-white/20 hover:bg-white/20 transition-all">
-            <CardHeader>
-              <BarChart3 className="h-12 w-12 text-indigo-400 mb-4" />
-              <CardTitle className="text-white">Analytics</CardTitle>
-              <CardDescription className="text-indigo-200">
-                Comprehensive reports and performance insights
-              </CardDescription>
-            </CardHeader>
-          </Card>
-        </div>
-      </section>
-
-      {/* How It Works */}
-      <section className="relative z-10 container mx-auto px-6 py-20">
-        <h2 className="text-4xl font-bold text-white text-center mb-12">
-          How It Works
-        </h2>
-
-        <div className="grid md:grid-cols-4 gap-8">
-          <div className="text-center">
-            <div className="w-16 h-16 bg-indigo-600 rounded-full flex items-center justify-center mx-auto mb-4">
-              <FileText className="h-8 w-8 text-white" />
-            </div>
-            <h3 className="text-xl font-bold text-white mb-2">1. Create Exam</h3>
-            <p className="text-indigo-200">
-              Build question banks and configure exam settings
-            </p>
-          </div>
-
-          <div className="text-center">
-            <div className="w-16 h-16 bg-indigo-600 rounded-full flex items-center justify-center mx-auto mb-4">
-              <Users className="h-8 w-8 text-white" />
-            </div>
-            <h3 className="text-xl font-bold text-white mb-2">2. Invite Students</h3>
-            <p className="text-indigo-200">
-              Share exam links with students via email or portal
-            </p>
-          </div>
-
-          <div className="text-center">
-            <div className="w-16 h-16 bg-indigo-600 rounded-full flex items-center justify-center mx-auto mb-4">
-              <Lock className="h-8 w-8 text-white" />
-            </div>
-            <h3 className="text-xl font-bold text-white mb-2">3. Monitor Live</h3>
-            <p className="text-indigo-200">
-              AI proctoring tracks and flags suspicious behavior
-            </p>
-          </div>
-
-          <div className="text-center">
-            <div className="w-16 h-16 bg-indigo-600 rounded-full flex items-center justify-center mx-auto mb-4">
-              <BarChart3 className="h-8 w-8 text-white" />
-            </div>
-            <h3 className="text-xl font-bold text-white mb-2">4. View Results</h3>
-            <p className="text-indigo-200">
-              Get instant results with detailed analytics
-            </p>
-          </div>
-        </div>
-      </section>
-
-      {/* CTA Section */}
-      <section className="relative z-10 container mx-auto px-6 py-20">
-        <Card className="bg-gradient-to-r from-indigo-600 to-purple-600 border-none">
-          <CardContent className="p-12 text-center">
-            <h2 className="text-4xl font-bold text-white mb-4">
-              Ready to Get Started?
-            </h2>
-            <p className="text-xl text-indigo-100 mb-8 max-w-2xl mx-auto">
-              Join thousands of institutions using ExamGuard for secure online assessments
-            </p>
-            <div className="flex gap-4 justify-center">
-              <Link to="/student">
-                <Button size="lg" className="bg-white text-indigo-600 hover:bg-indigo-50">
-                  Start as Student
-                </Button>
-              </Link>
-              <Link to="/admin">
-                <Button size="lg" variant="outline" className="border-white text-white hover:bg-white/10">
-                  Create as Admin
-                </Button>
+              <Link
+                to="/admin"
+                className="inline-flex items-center rounded-lg border border-white/20 px-8 lg:px-12 py-3 font-semibold hover:bg-white/10"
+              >
+                Admin dashboard
               </Link>
             </div>
-          </CardContent>
-        </Card>
-      </section>
+          </div>
 
-      {/* Footer */}
-      <footer className="relative z-10 border-t border-white/10 mt-20">
-        <div className="container mx-auto px-6 py-8">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Shield className="h-6 w-6 text-indigo-400" />
-              <span className="text-white">ExamGuard © 2026</span>
+          <div className="rounded-2xl border border-white/10 bg-neutral-900 p-5 shadow-2xl">
+            <div className="mb-4 flex items-center justify-between text-sm">
+              <span className="font-medium">Session log</span>
+              <span className="rounded-full bg-white/10 px-3 py-1 text-xs text-neutral-400">
+                Sample
+              </span>
             </div>
-            <div className="text-indigo-300">
-              Secure • Reliable • Advanced
+            <ul className="space-y-3">
+              {log.map((row) => (
+                <li key={row.time} className="flex items-center gap-3 rounded-lg bg-neutral-950 px-4 py-3">
+                  <span className={`h-2.5 w-2.5 rounded-full ${dot[row.level]}`} />
+                  <span className="font-mono text-sm text-neutral-500">{row.time}</span>
+                  <span className="text-sm">{row.event}</span>
+                </li>
+              ))}
+            </ul>
+            <p className="mt-4 text-xs text-neutral-500">
+              Every violation is saved with a time so admins can review it later.
+            </p>
+          </div>
+        </section>
+
+        <section className="border-t border-white/10 bg-neutral-900/50">
+          <div className="mx-auto max-w-[1600px] px-8 lg:px-12 py-20">
+            <h2 className="text-3xl font-bold">What it checks</h2>
+            <div className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+              {checks.map(({ icon: Icon, title, text }) => (
+                <div key={title} className="rounded-xl border border-white/10 bg-neutral-950 p-6">
+                  <Icon className="mb-4 h-6 w-6 text-emerald-400" />
+                  <h3 className="mb-2 font-semibold">{title}</h3>
+                  <p className="text-sm text-neutral-400">{text}</p>
+                </div>
+              ))}
             </div>
           </div>
-        </div>
+        </section>
+      </main>
+
+      <footer className="border-t border-white/10 px-8 lg:px-12 py-8 text-center text-sm text-neutral-500">
+        CheatBlock. Built by Moulik Gupta and Shubh Verma.
       </footer>
     </div>
   );

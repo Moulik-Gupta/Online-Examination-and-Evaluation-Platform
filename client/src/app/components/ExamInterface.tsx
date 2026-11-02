@@ -6,14 +6,15 @@ import { RadioGroup, RadioGroupItem } from './ui/radio-group';
 import { Label } from './ui/label';
 import { Progress } from './ui/progress';
 import { Badge } from './ui/badge';
-import { 
-  Clock, 
-  Video, 
-  AlertTriangle, 
-  ChevronLeft, 
+import {
+  Clock,
+  Video,
+  AlertTriangle,
+  ChevronLeft,
   ChevronRight,
   CheckCircle2,
-  Flag
+  Flag,
+  Shield,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -25,25 +26,25 @@ const examData = {
       id: 1,
       question: 'What is the time complexity of binary search?',
       options: ['O(n)', 'O(log n)', 'O(n²)', 'O(1)'],
-      correctAnswer: 1
+      correctAnswer: 1,
     },
     {
       id: 2,
       question: 'Which data structure uses LIFO principle?',
       options: ['Queue', 'Stack', 'Array', 'Linked List'],
-      correctAnswer: 1
+      correctAnswer: 1,
     },
     {
       id: 3,
       question: 'What is the worst-case time complexity of Quick Sort?',
       options: ['O(n log n)', 'O(n²)', 'O(n)', 'O(log n)'],
-      correctAnswer: 1
+      correctAnswer: 1,
     },
     {
       id: 4,
       question: 'Which traversal method uses a queue?',
       options: ['Pre-order', 'In-order', 'Post-order', 'Level-order'],
-      correctAnswer: 3
+      correctAnswer: 3,
     },
     {
       id: 5,
@@ -52,11 +53,11 @@ const examData = {
         'A tree where all nodes have two children',
         'A tree where all leaf nodes are at the same level',
         'A tree with maximum nodes at each level',
-        'Both B and C'
+        'Both B and C',
       ],
-      correctAnswer: 3
-    }
-  ]
+      correctAnswer: 3,
+    },
+  ],
 };
 
 export function ExamInterface() {
@@ -85,17 +86,17 @@ export function ExamInterface() {
     return () => clearInterval(timer);
   }, []);
 
-  // Webcam Proctoring
+  // Webcam proctoring
   useEffect(() => {
     startProctoring();
-    
+
     // Detect tab switching
     const handleVisibilityChange = () => {
       if (document.hidden) {
         const alert = `Tab switched at ${new Date().toLocaleTimeString()}`;
-        setProctoringAlerts(prev => [...prev, alert]);
+        setProctoringAlerts((prev) => [...prev, alert]);
         toast.warning('Warning: Tab switching detected!', {
-          description: 'This activity has been recorded.'
+          description: 'This activity has been recorded.',
         });
       }
     };
@@ -110,20 +111,20 @@ export function ExamInterface() {
 
   const startProctoring = async () => {
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ 
-        video: true, 
-        audio: false 
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: true,
+        audio: false,
       });
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
         setIsProctoringActive(true);
         toast.success('Proctoring Started', {
-          description: 'Your webcam is now being monitored.'
+          description: 'Your webcam is now being monitored.',
         });
       }
     } catch (error) {
       toast.error('Camera Access Required', {
-        description: 'Please allow camera access to continue with the exam.'
+        description: 'Please allow camera access to continue with the exam.',
       });
     }
   };
@@ -131,7 +132,7 @@ export function ExamInterface() {
   const stopProctoring = () => {
     if (videoRef.current && videoRef.current.srcObject) {
       const stream = videoRef.current.srcObject as MediaStream;
-      stream.getTracks().forEach(track => track.stop());
+      stream.getTracks().forEach((track) => track.stop());
       setIsProctoringActive(false);
     }
   };
@@ -140,30 +141,32 @@ export function ExamInterface() {
     const hours = Math.floor(seconds / 3600);
     const minutes = Math.floor((seconds % 3600) / 60);
     const secs = seconds % 60;
-    return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+    return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${secs
+      .toString()
+      .padStart(2, '0')}`;
   };
 
   const handleAnswerChange = (questionId: number, answerIndex: number) => {
-    setAnswers(prev => ({
+    setAnswers((prev) => ({
       ...prev,
-      [questionId]: answerIndex
+      [questionId]: answerIndex,
     }));
   };
 
   const handleNextQuestion = () => {
     if (currentQuestion < examData.questions.length - 1) {
-      setCurrentQuestion(prev => prev + 1);
+      setCurrentQuestion((prev) => prev + 1);
     }
   };
 
   const handlePreviousQuestion = () => {
     if (currentQuestion > 0) {
-      setCurrentQuestion(prev => prev - 1);
+      setCurrentQuestion((prev) => prev - 1);
     }
   };
 
   const toggleFlag = (questionId: number) => {
-    setFlaggedQuestions(prev => {
+    setFlaggedQuestions((prev) => {
       const newSet = new Set(prev);
       if (newSet.has(questionId)) {
         newSet.delete(questionId);
@@ -177,7 +180,7 @@ export function ExamInterface() {
   const handleSubmitExam = () => {
     stopProctoring();
     toast.success('Exam Submitted!', {
-      description: 'Your answers have been recorded.'
+      description: 'Your answers have been recorded.',
     });
     setTimeout(() => {
       navigate('/results');
@@ -189,29 +192,28 @@ export function ExamInterface() {
   const currentQuestionData = examData.questions[currentQuestion];
 
   return (
-    <div className="min-h-screen bg-slate-50">
-      {/* Top Bar */}
-      <div className="bg-white border-b shadow-sm sticky top-0 z-50">
-        <div className="container mx-auto px-6 py-4">
+    <div className="min-h-screen bg-background text-foreground">
+      {/* Top bar */}
+      <div className="sticky top-0 z-50 border-b border-border bg-background/90 backdrop-blur">
+        <div className="mx-auto max-w-[1600px] px-8 py-4 lg:px-12">
           <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-xl font-bold">{examData.title}</h1>
-              <p className="text-sm text-muted-foreground">
-                Question {currentQuestion + 1} of {examData.questions.length}
-              </p>
+            <div className="flex items-center gap-4">
+              <Shield className="h-7 w-7 text-primary" />
+              <div>
+                <h1 className="text-xl font-bold">{examData.title}</h1>
+                <p className="text-sm text-muted-foreground">
+                  Question {currentQuestion + 1} of {examData.questions.length}
+                </p>
+              </div>
             </div>
             <div className="flex items-center gap-6">
               <div className="flex items-center gap-2">
-                <Video className={`h-5 w-5 ${isProctoringActive ? 'text-green-600' : 'text-red-600'}`} />
-                <span className="text-sm">
-                  {isProctoringActive ? 'Proctoring Active' : 'Camera Off'}
-                </span>
+                <Video className={`h-5 w-5 ${isProctoringActive ? 'text-primary' : 'text-red-400'}`} />
+                <span className="text-sm">{isProctoringActive ? 'Proctoring Active' : 'Camera Off'}</span>
               </div>
-              <div className="flex items-center gap-2 bg-orange-100 px-4 py-2 rounded-lg">
-                <Clock className="h-5 w-5 text-orange-600" />
-                <span className="text-lg font-bold text-orange-600">
-                  {formatTime(timeRemaining)}
-                </span>
+              <div className="flex items-center gap-2 rounded-lg bg-amber-400/10 px-4 py-2">
+                <Clock className="h-5 w-5 text-amber-400" />
+                <span className="text-lg font-bold text-amber-400">{formatTime(timeRemaining)}</span>
               </div>
             </div>
           </div>
@@ -221,15 +223,15 @@ export function ExamInterface() {
         </div>
       </div>
 
-      <div className="container mx-auto px-6 py-8">
-        <div className="grid lg:grid-cols-3 gap-6">
-          {/* Main Question Area */}
-          <div className="lg:col-span-2 space-y-6">
-            {/* Proctoring Alerts */}
+      <main className="mx-auto max-w-[1600px] px-8 py-8 lg:px-12">
+        <div className="grid gap-6 lg:grid-cols-3">
+          {/* Question area */}
+          <div className="space-y-6 lg:col-span-2">
+            {/* Proctoring alerts */}
             {proctoringAlerts.length > 0 && (
-              <Card className="border-orange-200 bg-orange-50">
+              <Card className="border-amber-400/30 bg-amber-400/10">
                 <CardHeader>
-                  <CardTitle className="flex items-center gap-2 text-orange-800">
+                  <CardTitle className="flex items-center gap-2 text-amber-300">
                     <AlertTriangle className="h-5 w-5" />
                     Proctoring Alerts ({proctoringAlerts.length})
                   </CardTitle>
@@ -237,7 +239,7 @@ export function ExamInterface() {
                 <CardContent>
                   <div className="space-y-1">
                     {proctoringAlerts.slice(-3).map((alert, index) => (
-                      <p key={index} className="text-sm text-orange-700">
+                      <p key={index} className="text-sm text-amber-200">
                         • {alert}
                       </p>
                     ))}
@@ -246,38 +248,42 @@ export function ExamInterface() {
               </Card>
             )}
 
-            {/* Question Card */}
+            {/* Question */}
             <Card>
               <CardHeader>
                 <div className="flex items-start justify-between">
-                  <CardTitle className="text-lg">
-                    Question {currentQuestion + 1}
-                  </CardTitle>
+                  <CardTitle className="text-lg">Question {currentQuestion + 1}</CardTitle>
                   <Button
                     variant="ghost"
                     size="sm"
                     onClick={() => toggleFlag(currentQuestionData.id)}
-                    className={flaggedQuestions.has(currentQuestionData.id) ? 'text-orange-600' : ''}
+                    className={flaggedQuestions.has(currentQuestionData.id) ? 'text-amber-400' : ''}
                   >
-                    <Flag className={`h-4 w-4 ${flaggedQuestions.has(currentQuestionData.id) ? 'fill-current' : ''}`} />
+                    <Flag
+                      className={`h-4 w-4 ${
+                        flaggedQuestions.has(currentQuestionData.id) ? 'fill-current' : ''
+                      }`}
+                    />
                   </Button>
                 </div>
               </CardHeader>
               <CardContent>
-                <p className="text-lg mb-6">{currentQuestionData.question}</p>
-                
+                <p className="mb-6 text-lg">{currentQuestionData.question}</p>
+
                 <RadioGroup
                   value={answers[currentQuestionData.id]?.toString()}
-                  onValueChange={(value) => handleAnswerChange(currentQuestionData.id, parseInt(value))}
+                  onValueChange={(value) =>
+                    handleAnswerChange(currentQuestionData.id, parseInt(value))
+                  }
                 >
                   <div className="space-y-4">
                     {currentQuestionData.options.map((option, index) => (
                       <div
                         key={index}
-                        className={`flex items-center space-x-3 p-4 rounded-lg border-2 transition-colors ${
+                        className={`flex items-center space-x-3 rounded-lg border-2 p-4 transition-colors ${
                           answers[currentQuestionData.id] === index
-                            ? 'border-indigo-600 bg-indigo-50'
-                            : 'border-gray-200 hover:border-indigo-300'
+                            ? 'border-primary bg-primary/10'
+                            : 'border-border hover:border-primary/50'
                         }`}
                       >
                         <RadioGroupItem value={index.toString()} id={`option-${index}`} />
@@ -293,25 +299,21 @@ export function ExamInterface() {
 
             {/* Navigation */}
             <div className="flex items-center justify-between">
-              <Button
-                variant="outline"
-                onClick={handlePreviousQuestion}
-                disabled={currentQuestion === 0}
-              >
-                <ChevronLeft className="h-4 w-4 mr-2" />
+              <Button variant="outline" onClick={handlePreviousQuestion} disabled={currentQuestion === 0}>
+                <ChevronLeft className="mr-2 h-4 w-4" />
                 Previous
               </Button>
-              
+
               <div className="flex gap-2">
                 {currentQuestion === examData.questions.length - 1 ? (
-                  <Button onClick={handleSubmitExam} className="bg-green-600 hover:bg-green-700">
-                    <CheckCircle2 className="h-4 w-4 mr-2" />
+                  <Button onClick={handleSubmitExam}>
+                    <CheckCircle2 className="mr-2 h-4 w-4" />
                     Submit Exam
                   </Button>
                 ) : (
                   <Button onClick={handleNextQuestion}>
                     Next
-                    <ChevronRight className="h-4 w-4 ml-2" />
+                    <ChevronRight className="ml-2 h-4 w-4" />
                   </Button>
                 )}
               </div>
@@ -320,38 +322,38 @@ export function ExamInterface() {
 
           {/* Sidebar */}
           <div className="space-y-6">
-            {/* Webcam Feed */}
+            {/* Webcam */}
             <Card>
               <CardHeader>
-                <CardTitle className="text-base flex items-center gap-2">
+                <CardTitle className="flex items-center gap-2 text-base">
                   <Video className="h-4 w-4" />
                   Proctoring Monitor
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="relative aspect-video bg-slate-900 rounded-lg overflow-hidden">
+                <div className="relative aspect-video overflow-hidden rounded-lg bg-neutral-900">
                   <video
                     ref={videoRef}
                     autoPlay
                     muted
                     playsInline
-                    className="w-full h-full object-cover"
+                    className="h-full w-full object-cover"
                   />
                   {isProctoringActive && (
-                    <div className="absolute top-2 right-2">
-                      <Badge className="bg-red-600">
-                        <span className="animate-pulse mr-1">●</span> Recording
+                    <div className="absolute right-2 top-2">
+                      <Badge className="bg-red-600 text-white">
+                        <span className="mr-1 animate-pulse">●</span> Live
                       </Badge>
                     </div>
                   )}
                 </div>
-                <p className="text-xs text-muted-foreground mt-2">
+                <p className="mt-2 text-xs text-muted-foreground">
                   Your activity is being monitored for security
                 </p>
               </CardContent>
             </Card>
 
-            {/* Question Navigator */}
+            {/* Navigator */}
             <Card>
               <CardHeader>
                 <CardTitle className="text-base">Question Navigator</CardTitle>
@@ -367,36 +369,34 @@ export function ExamInterface() {
                       onClick={() => setCurrentQuestion(index)}
                       className={`aspect-square rounded-lg text-sm font-medium transition-colors ${
                         index === currentQuestion
-                          ? 'bg-indigo-600 text-white'
+                          ? 'bg-primary text-primary-foreground'
                           : answers[q.id] !== undefined
-                          ? 'bg-green-100 text-green-800'
-                          : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                      } ${
-                        flaggedQuestions.has(q.id) ? 'ring-2 ring-orange-400' : ''
-                      }`}
+                          ? 'bg-primary/20 text-primary'
+                          : 'bg-secondary text-muted-foreground hover:bg-accent'
+                      } ${flaggedQuestions.has(q.id) ? 'ring-2 ring-amber-400' : ''}`}
                     >
                       {index + 1}
                     </button>
                   ))}
                 </div>
-                <div className="mt-4 space-y-2 text-xs">
+                <div className="mt-4 space-y-2 text-xs text-muted-foreground">
                   <div className="flex items-center gap-2">
-                    <div className="w-4 h-4 bg-green-100 rounded"></div>
+                    <div className="h-4 w-4 rounded bg-primary/20"></div>
                     <span>Answered</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <div className="w-4 h-4 bg-slate-100 rounded"></div>
+                    <div className="h-4 w-4 rounded bg-secondary"></div>
                     <span>Not Answered</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <div className="w-4 h-4 bg-slate-100 rounded ring-2 ring-orange-400"></div>
+                    <div className="h-4 w-4 rounded bg-secondary ring-2 ring-amber-400"></div>
                     <span>Flagged</span>
                   </div>
                 </div>
               </CardContent>
             </Card>
 
-            {/* Exam Stats */}
+            {/* Stats */}
             <Card>
               <CardHeader>
                 <CardTitle className="text-base">Exam Statistics</CardTitle>
@@ -408,23 +408,23 @@ export function ExamInterface() {
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Answered</span>
-                  <span className="font-medium text-green-600">{answeredCount}</span>
+                  <span className="font-medium text-primary">{answeredCount}</span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Not Answered</span>
-                  <span className="font-medium text-orange-600">
+                  <span className="font-medium text-amber-400">
                     {examData.questions.length - answeredCount}
                   </span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Flagged</span>
-                  <span className="font-medium text-orange-600">{flaggedQuestions.size}</span>
+                  <span className="font-medium text-amber-400">{flaggedQuestions.size}</span>
                 </div>
               </CardContent>
             </Card>
           </div>
         </div>
-      </div>
+      </main>
     </div>
   );
 }
