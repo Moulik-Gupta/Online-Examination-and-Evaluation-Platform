@@ -13,6 +13,9 @@ const VIOLATION_TYPES = [
   'multiple_faces',
 ];
 
+// A submit this long after the deadline still counts (network delay, slow tab).
+const LATE_GRACE_MS = 60 * 1000;
+
 // Correct answers are never selected here, so they can never be sent to the browser.
 router.get('/exams', requireAuth, (req, res) => {
   const exams = db
@@ -38,6 +41,14 @@ router.get('/exams/:id', requireAuth, (req, res) => {
   res.json({ exam, questions });
 });
 
+// Exam ids the signed-in student has already submitted (used to hide "Start").
+router.get('/completed-exams', requireAuth, requireRole('student'), (req, res) => {
+  const rows = db
+    .prepare('SELECT DISTINCT exam_id FROM attempts WHERE user_id = ? AND submitted_at IS NOT NULL')
+    .all(req.user.id);
+  res.json({ examIds: rows.map((r) => r.exam_id) });
+});
+
 // Finds an attempt that belongs to the signed-in student and is not submitted yet.
 function getOwnOpenAttempt(req, res) {
   const attempt = db
@@ -57,7 +68,8 @@ function getOwnOpenAttempt(req, res) {
 router.post('/attempts', requireAuth, requireRole('student'), (req, res) => {
   const examId = Number(req.body?.examId);
   if (!Number.isInteger(examId)) return res.status(400).json({ error: 'examId is required' });
-  if (!db.prepare('SELECT id FROM exams WHERE id = ?').get(examId)) {
+  const exam = db.prepare('SELECT id, scheduled_at FROM exams WHERE id = ?').get(examId);
+  if (!exam) {
     return res.status(404).json({ error: 'Exam not found' });
   }
 
@@ -72,6 +84,11 @@ router.post('/attempts', requireAuth, requireRole('student'), (req, res) => {
     .prepare('SELECT id FROM attempts WHERE user_id = ? AND exam_id = ? AND submitted_at IS NOT NULL')
     .get(req.user.id, examId);
   if (done) return res.status(409).json({ error: 'You have already taken this exam.' });
+
+  // Scheduled window: cannot start before the exam opens.
+  if (exam.scheduled_at && Date.now() < new Date(exam.scheduled_at).getTime()) {
+    return res.status(403).json({ error: 'This exam has not opened yet.' });
+  }
 
   const startedAt = new Date().toISOString();
   const result = db
@@ -102,7 +119,11 @@ router.post('/attempts/:id/submit', requireAuth, requireRole('student'), (req, r
   const attempt = getOwnOpenAttempt(req, res);
   if (!attempt) return;
 
-  const given = req.body?.answers ?? {};
+  // Time limit, checked with the server's clock. A late submit saves no answers and scores 0.
+  const exam = db.prepare('SELECT duration_min FROM exams WHERE id = ?').get(attempt.exam_id);
+  const deadline = new Date(attempt.started_at).getTime() + exam.duration_min * 60000 + LATE_GRACE_MS;
+  const late = Date.now() > deadline;
+  const given = late ? {} : req.body?.answers ?? {};
   const questions = db
     .prepare('SELECT id, correct_index FROM questions WHERE exam_id = ?')
     .all(attempt.exam_id);
@@ -130,15 +151,7 @@ router.post('/attempts/:id/submit', requireAuth, requireRole('student'), (req, r
     db.exec('ROLLBACK');
     throw err;
   }
-  res.json({ score, total: questions.length });
-});
-
-// Exam ids the signed-in student has already submitted (used to hide "Start").
-router.get('/completed-exams', requireAuth, requireRole('student'), (req, res) => {
-  const rows = db
-    .prepare('SELECT DISTINCT exam_id FROM attempts WHERE user_id = ? AND submitted_at IS NOT NULL')
-    .all(req.user.id);
-  res.json({ examIds: rows.map((r) => r.exam_id) });
+  res.json({ score, total: questions.length, late });
 });
 
 export default router;
