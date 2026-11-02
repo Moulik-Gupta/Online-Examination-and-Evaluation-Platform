@@ -15,7 +15,7 @@ import {
   DialogTrigger,
 } from './ui/dialog';
 import { Nav } from './Nav';
-import { Plus, FileText, Users, AlertTriangle, BarChart3, Calendar, Clock, Trash2 } from 'lucide-react';
+import { Plus, FileText, Users, AlertTriangle, BarChart3, Calendar, Clock, Trash2, Edit } from 'lucide-react';
 import { toast } from 'sonner';
 import { api, ApiError } from '../api';
 
@@ -40,6 +40,18 @@ type Attempt = {
   violations: number;
 };
 
+type AdminQuestion = {
+  id: number;
+  text: string;
+  options: string[] | string;
+  correct_index: number;
+};
+
+const optionsOf = (q: AdminQuestion): string[] =>
+  Array.isArray(q.options) ? q.options : JSON.parse(q.options);
+
+const emptyQuestion = { text: '', options: ['', '', '', ''], correct: 0 };
+
 type Violation = { id: number; type: string; detail: string; occurred_at: string };
 
 const violationLabels: Record<string, string> = {
@@ -63,6 +75,83 @@ export function AdminDashboard() {
   const [newExam, setNewExam] = useState(emptyExam);
   const [logAttempt, setLogAttempt] = useState<Attempt | null>(null);
   const [log, setLog] = useState<Violation[] | null>(null);
+
+  const [examId, setExamId] = useState<number | null>(null);
+  const [questions, setQuestions] = useState<AdminQuestion[]>([]);
+  const [qOpen, setQOpen] = useState(false);
+  const [editingId, setEditingId] = useState<number | null>(null);
+  const [qForm, setQForm] = useState(emptyQuestion);
+
+  const loadQuestions = async (id: number) => {
+    try {
+      const data = await api<{ questions: AdminQuestion[] }>(`/admin/exams/${id}/questions`);
+      setQuestions(data.questions);
+    } catch (err) {
+      toast.error('Could not load questions', { description: errorText(err) });
+    }
+  };
+
+  // Pick the first exam by default, and reload questions when the choice changes.
+  useEffect(() => {
+    if (examId === null && exams.length > 0) setExamId(exams[0].id);
+  }, [exams, examId]);
+  useEffect(() => {
+    if (examId !== null) loadQuestions(examId);
+  }, [examId]);
+
+  const openQuestionDialog = (q?: AdminQuestion) => {
+    if (q) {
+      setEditingId(q.id);
+      setQForm({ text: q.text, options: optionsOf(q), correct: q.correct_index });
+    } else {
+      setEditingId(null);
+      setQForm(emptyQuestion);
+    }
+    setQOpen(true);
+  };
+
+  const saveQuestion = async () => {
+    const options = qForm.options.map((o) => o.trim());
+    if (!qForm.text.trim() || options.length < 2 || options.some((o) => !o)) {
+      toast.error('Add the question text and fill in every option (2 to 6).');
+      return;
+    }
+    const body = { text: qForm.text.trim(), options, correct_index: qForm.correct };
+    try {
+      if (editingId) {
+        await api(`/admin/questions/${editingId}`, { method: 'PUT', body });
+      } else {
+        await api(`/admin/exams/${examId}/questions`, { method: 'POST', body });
+      }
+      toast.success(editingId ? 'Question updated' : 'Question added');
+      setQOpen(false);
+      if (examId !== null) loadQuestions(examId);
+      load();
+    } catch (err) {
+      toast.error('Could not save the question', { description: errorText(err) });
+    }
+  };
+
+  const deleteQuestion = async (q: AdminQuestion) => {
+    if (!window.confirm('Delete this question?')) return;
+    try {
+      await api(`/admin/questions/${q.id}`, { method: 'DELETE' });
+      if (examId !== null) loadQuestions(examId);
+      load();
+    } catch (err) {
+      toast.error('Could not delete the question', { description: errorText(err) });
+    }
+  };
+
+  const setOption = (i: number, value: string) =>
+    setQForm({ ...qForm, options: qForm.options.map((o, idx) => (idx === i ? value : o)) });
+
+  const removeOption = (i: number) =>
+    setQForm({
+      ...qForm,
+      options: qForm.options.filter((_, idx) => idx !== i),
+      correct: qForm.correct === i ? 0 : qForm.correct > i ? qForm.correct - 1 : qForm.correct,
+    });
 
   const load = async () => {
     try {
@@ -249,6 +338,7 @@ export function AdminDashboard() {
         <Tabs defaultValue="exams" className="space-y-6">
           <TabsList>
             <TabsTrigger value="exams">Exams</TabsTrigger>
+            <TabsTrigger value="questions">Questions</TabsTrigger>
             <TabsTrigger value="attempts">Attempts</TabsTrigger>
           </TabsList>
 
@@ -289,6 +379,70 @@ export function AdminDashboard() {
                 </CardContent>
               </Card>
             ))}
+          </TabsContent>
+
+          <TabsContent value="questions" className="space-y-4">
+            {exams.length === 0 ? (
+              <p className="text-muted-foreground">Create an exam first, then add its questions here.</p>
+            ) : (
+              <>
+                <div className="flex flex-wrap items-center justify-between gap-4">
+                  <select
+                    className={`${inputClass} rounded-md px-3 py-2 text-sm`}
+                    value={examId ?? ''}
+                    onChange={(e) => setExamId(Number(e.target.value))}
+                  >
+                    {exams.map((ex) => (
+                      <option key={ex.id} value={ex.id}>
+                        {ex.title}
+                      </option>
+                    ))}
+                  </select>
+                  <Button onClick={() => openQuestionDialog()}>
+                    <Plus className="mr-2 h-4 w-4" />
+                    Add question
+                  </Button>
+                </div>
+                {questions.length === 0 && (
+                  <p className="text-muted-foreground">This exam has no questions yet.</p>
+                )}
+                {questions.map((q, i) => (
+                  <Card key={q.id}>
+                    <CardContent className="pt-6">
+                      <div className="flex items-start justify-between gap-4">
+                        <p className="font-medium">
+                          {i + 1}. {q.text}
+                        </p>
+                        <div className="flex shrink-0 gap-1">
+                          <Button variant="ghost" size="sm" onClick={() => openQuestionDialog(q)}>
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="text-red-400 hover:text-red-300"
+                            onClick={() => deleteQuestion(q)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+                      <ul className="mt-3 space-y-1 text-sm">
+                        {optionsOf(q).map((opt, idx) => (
+                          <li
+                            key={idx}
+                            className={idx === q.correct_index ? 'text-primary' : 'text-muted-foreground'}
+                          >
+                            {idx === q.correct_index ? '✓ ' : '• '}
+                            {opt}
+                          </li>
+                        ))}
+                      </ul>
+                    </CardContent>
+                  </Card>
+                ))}
+              </>
+            )}
           </TabsContent>
 
           <TabsContent value="attempts">
@@ -345,6 +499,67 @@ export function AdminDashboard() {
             </Card>
           </TabsContent>
         </Tabs>
+
+        <Dialog open={qOpen} onOpenChange={setQOpen}>
+          <DialogContent className="max-w-2xl">
+            <DialogHeader>
+              <DialogTitle>{editingId ? 'Edit question' : 'Add question'}</DialogTitle>
+              <DialogDescription>Pick the correct option with the radio button.</DialogDescription>
+            </DialogHeader>
+            <div className="grid gap-4 py-2">
+              <div className="grid gap-2">
+                <Label htmlFor="qtext">Question</Label>
+                <Textarea
+                  id="qtext"
+                  className={inputClass}
+                  value={qForm.text}
+                  onChange={(e) => setQForm({ ...qForm, text: e.target.value })}
+                />
+              </div>
+              <div className="grid gap-2">
+                <Label>Options</Label>
+                {qForm.options.map((opt, i) => (
+                  <div key={i} className="flex items-center gap-2">
+                    <input
+                      type="radio"
+                      name="correct"
+                      checked={qForm.correct === i}
+                      onChange={() => setQForm({ ...qForm, correct: i })}
+                      className="accent-emerald-400"
+                    />
+                    <Input
+                      className={inputClass}
+                      placeholder={`Option ${i + 1}`}
+                      value={opt}
+                      onChange={(e) => setOption(i, e.target.value)}
+                    />
+                    {qForm.options.length > 2 && (
+                      <Button variant="ghost" size="sm" onClick={() => removeOption(i)}>
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    )}
+                  </div>
+                ))}
+                {qForm.options.length < 6 && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="w-fit"
+                    onClick={() => setQForm({ ...qForm, options: [...qForm.options, ''] })}
+                  >
+                    Add option
+                  </Button>
+                )}
+              </div>
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={() => setQOpen(false)}>
+                Cancel
+              </Button>
+              <Button onClick={saveQuestion}>{editingId ? 'Save changes' : 'Add question'}</Button>
+            </div>
+          </DialogContent>
+        </Dialog>
 
         <Dialog open={!!logAttempt} onOpenChange={(open) => !open && setLogAttempt(null)}>
           <DialogContent className="max-w-xl">

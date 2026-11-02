@@ -594,7 +594,8 @@ export function ExamInterface() {
                 <p className="mb-6 text-lg">{currentQuestionData.text}</p>
 
                 <RadioGroup
-                  value={answers[currentQuestionData.id]?.toString()}
+                  key={currentQuestionData.id}
+                  value={answers[currentQuestionData.id]?.toString() ?? ''}
                   onValueChange={(value) =>
                     handleAnswerChange(currentQuestionData.id, parseInt(value))
                   }
@@ -603,14 +604,19 @@ export function ExamInterface() {
                     {currentQuestionData.options.map((option, index) => (
                       <div
                         key={index}
-                        className={`flex items-center space-x-3 rounded-lg border-2 p-4 transition-colors ${
+                        onClick={() => handleAnswerChange(currentQuestionData.id, index)}
+                        className={`flex cursor-pointer items-center space-x-3 rounded-lg border-2 p-4 transition-colors ${
                           answers[currentQuestionData.id] === index
                             ? 'border-primary bg-primary/10'
                             : 'border-border hover:border-primary/50'
                         }`}
                       >
-                        <RadioGroupItem value={index.toString()} id={`option-${index}`} />
-                        <Label htmlFor={`option-${index}`} className="flex-1 cursor-pointer">
+                        <RadioGroupItem
+                          value={index.toString()}
+                          id={`q${currentQuestionData.id}-option-${index}`}
+                          className="border-muted-foreground"
+                        />
+                        <Label htmlFor={`q${currentQuestionData.id}-option-${index}`} className="flex-1 cursor-pointer py-1">
                           {option}
                         </Label>
                       </div>
