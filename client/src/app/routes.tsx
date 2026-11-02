@@ -1,29 +1,28 @@
 import { createBrowserRouter } from "react-router";
 import { LandingPage } from "./components/LandingPage";
+import { LoginPage } from "./components/LoginPage";
+import { RequireAuth } from "./components/RequireAuth";
 import { StudentDashboard } from "./components/StudentDashboard";
 import { ExamInterface } from "./components/ExamInterface";
 import { ResultsAnalytics } from "./components/ResultsAnalytics";
 import { AdminDashboard } from "./components/AdminDashboard";
 
 export const router = createBrowserRouter([
+  { path: "/", Component: LandingPage },
+  { path: "/login", Component: LoginPage },
   {
-    path: "/",
-    Component: LandingPage,
+    element: <RequireAuth role="student" />,
+    children: [
+      { path: "/student", Component: StudentDashboard },
+      { path: "/exam/:examId", Component: ExamInterface },
+    ],
   },
   {
-    path: "/student",
-    Component: StudentDashboard,
+    element: <RequireAuth />,
+    children: [{ path: "/results", Component: ResultsAnalytics }],
   },
   {
-    path: "/exam/:examId",
-    Component: ExamInterface,
-  },
-  {
-    path: "/results",
-    Component: ResultsAnalytics,
-  },
-  {
-    path: "/admin",
-    Component: AdminDashboard,
+    element: <RequireAuth role="admin" />,
+    children: [{ path: "/admin", Component: AdminDashboard }],
   },
 ]);

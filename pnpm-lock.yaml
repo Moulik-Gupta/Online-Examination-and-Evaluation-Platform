@@ -7,6 +7,10 @@ settings:
 importers:
 
   .:
+    dependencies:
+      '@mediapipe/tasks-vision':
+        specifier: ^1.2.0
+        version: 1.2.0
     devDependencies:
       '@types/react':
         specifier: ^18.3.31
@@ -16,6 +20,9 @@ importers:
         version: 18.3.7(@types/react@18.3.31)
 
 packages:
+
+  '@mediapipe/tasks-vision@1.2.0':
+    resolution: {integrity: sha512-7+dr9GbGyTtcuLh11wE5TOn4dNFRncIT9oAWs72620WX99KW5FfzF6rFJ/ChTgXG9vJ6dCiE9FrEEY4CnwPWKQ==}
 
   '@types/prop-types@15.7.15':
     resolution: {integrity: sha512-F6bEyamV9jKGAFBEmlQnesRPGOQqS2+Uwi0Em15xenOxHaf2hv6L8YCVn3rPdPJOiJfPiCnLIRyvwVaqMY3MIw==}
@@ -32,6 +39,8 @@ packages:
     resolution: {integrity: sha512-z1HGKcYy2xA8AGQfwrn0PAy+PB7X/GSj3UVJW9qKyn43xWa+gl5nXmU4qqLMRzWVLFC8KusUX8T/0kCiOYpAIQ==}
 
 snapshots:
+
+  '@mediapipe/tasks-vision@1.2.0': {}
 
   '@types/prop-types@15.7.15': {}
 

@@ -1,0 +1,13 @@
+{
+  "name": "cheatblock-server",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "node --watch --env-file=.env src/index.js",
+    "start": "node --env-file=.env src/index.js",
+    "seed": "node src/seed.js"
+  },
+  "dependencies": {
+    "express": "^5.3.0"
+  }
+}
