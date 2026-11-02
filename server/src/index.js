@@ -1,7 +1,11 @@
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import express from 'express';
 import db from './db.js';
 import examRoutes from './exams.js';
 import adminRoutes from './admin.js';
+import { seedIfEmpty } from './seed.js';
 
 import {
   COOKIE_NAME,
@@ -14,6 +18,7 @@ import {
 const app = express();
 const PORT = process.env.PORT || 3001;
 
+app.set('trust proxy', 1); // behind the host's HTTPS proxy
 app.use(express.json());
 
 app.get('/api/health', (req, res) => {
@@ -56,6 +61,19 @@ app.get('/api/auth/me', requireAuth, (req, res) => {
 app.use('/api', examRoutes);
 
 app.use('/api', adminRoutes);
+
+// In production the server also serves the built client (client/dist).
+const clientDist = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../client/dist');
+if (fs.existsSync(clientDist)) {
+  app.use(express.static(clientDist));
+  // Page routes such as /student or /exam/1 load index.html; the router takes over in the browser.
+  app.use((req, res, next) => {
+    if (req.method !== 'GET' || req.path.startsWith('/api')) return next();
+    res.sendFile(path.join(clientDist, 'index.html'));
+  });
+}
+
+seedIfEmpty();
 
 app.listen(PORT, () => {
   console.log(`API running on http://localhost:${PORT}`);

@@ -2,20 +2,18 @@ import { Link } from 'react-router';
 import { Shield, Camera, Maximize, Eye, Clock, BarChart3, Lock, ArrowRight } from 'lucide-react';
 
 const checks = [
-  { icon: Camera, title: 'Face check', text: 'The webcam confirms exactly one person is in frame for the whole exam.' },
-  { icon: Maximize, title: 'Fullscreen lock', text: 'Leaving fullscreen is logged as a violation the moment it happens.' },
-  { icon: Eye, title: 'Tab-switch detection', text: 'Switching tabs or windows is caught and timestamped.' },
-  { icon: Lock, title: 'Copy and paste blocked', text: 'Copy, paste and right-click are disabled during the exam.' },
-  { icon: Clock, title: 'Auto-submit', text: 'Too many violations, or the timer running out, submits the exam.' },
-  { icon: BarChart3, title: 'Reports for admins', text: 'Scores and a per-student violation log, ready to review.' },
+  { icon: Camera, title: 'Face check', text: 'The webcam checks for one face in frame. No face, or more than one, for a few seconds is logged.' },
+  { icon: Maximize, title: 'Fullscreen', text: 'Leaving fullscreen is logged as a warning, with the time.' },
+  { icon: Eye, title: 'Tab-switch detection', text: 'Switching tabs or windows is logged with a time.' },
+  { icon: Lock, title: 'Copy and paste blocked', text: 'Copy, paste and right-click are blocked during the exam.' },
+  { icon: Clock, title: 'Auto-submit', text: 'Five warnings, or the timer running out, submits the exam.' },
+  { icon: BarChart3, title: 'Review for admins', text: 'Scores and a timestamped warning log for every attempt.' },
 ];
 
 const log = [
-  { time: '10:02:14', event: 'Exam started', level: 'ok' },
-  { time: '10:09:41', event: 'Tab switch detected', level: 'warn' },
-  { time: '10:15:03', event: 'No face in frame', level: 'warn' },
-  { time: '10:15:09', event: 'Face restored', level: 'ok' },
-  { time: '10:21:58', event: 'Fullscreen exited', level: 'bad' },
+  { time: '10:09:41', event: 'Switched tab', level: 'warn' },
+  { time: '10:15:03', event: 'Face not visible', level: 'warn' },
+  { time: '10:21:58', event: 'Left fullscreen', level: 'warn' },
 ];
 
 const dot: Record<string, string> = {
@@ -45,11 +43,11 @@ export function LandingPage() {
               Online exam proctoring
             </p>
             <h1 className="text-5xl font-bold leading-tight sm:text-6xl">
-              Exams you can trust. Cheating, blocked.
+              Online exams with proctoring built in.
             </h1>
             <p className="mt-6 max-w-lg text-lg text-neutral-400">
-              CheatBlock watches the webcam, the screen and the browser during an exam,
-              and keeps a timestamped record of everything that looks wrong.
+              CheatBlock watches the webcam, fullscreen and browser during an exam, and keeps a
+              timestamped log of anything that looks wrong, for a person to review.
             </p>
             <div className="mt-8 flex flex-wrap gap-4">
               <Link
@@ -84,7 +82,7 @@ export function LandingPage() {
               ))}
             </ul>
             <p className="mt-4 text-xs text-neutral-500">
-              Every violation is saved with a time so admins can review it later.
+              Every warning is saved with a time so admins can review it later.
             </p>
           </div>
         </section>
@@ -101,6 +99,11 @@ export function LandingPage() {
                 </div>
               ))}
             </div>
+            <p className="mt-10 max-w-3xl text-sm text-neutral-400">
+              Browser proctoring is a deterrent and an evidence log, not a guarantee. It cannot see a
+              second device or a person outside the camera, and it can flag honest mistakes such as
+              poor light. The log is for a person to review, not proof of cheating.
+            </p>
           </div>
         </section>
       </main>
