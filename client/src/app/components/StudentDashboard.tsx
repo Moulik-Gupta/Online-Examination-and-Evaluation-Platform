@@ -39,16 +39,22 @@ const formatTime = (iso: string | null) =>
 export function StudentDashboard() {
   const [exams, setExams] = useState<Exam[]>([]);
   const [results, setResults] = useState<Result[]>([]);
+  const [doneIds, setDoneIds] = useState<Set<number>>(new Set());
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
-    Promise.all([api<{ exams: Exam[] }>('/exams'), api<{ results: Result[] }>('/results')])
-      .then(([e, r]) => {
+    Promise.all([
+      api<{ exams: Exam[] }>('/exams'),
+      api<{ results: Result[] }>('/results'),
+      api<{ examIds: number[] }>('/completed-exams'),
+    ])
+      .then(([e, r, c]) => {
         if (cancelled) return;
         setExams(e.exams);
         setResults(r.results);
+        setDoneIds(new Set(c.examIds));
       })
       .catch((err) => {
         if (!cancelled) setError(err instanceof Error ? err.message : 'Could not load your exams');
@@ -89,7 +95,7 @@ export function StudentDashboard() {
                   <Calendar className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">{exams.length}</div>
+                  <div className="text-2xl font-bold">{exams.filter((e) => !doneIds.has(e.id)).length}</div>
                   <p className="mt-1 text-xs text-muted-foreground">Ready to take</p>
                 </CardContent>
               </Card>
@@ -157,9 +163,13 @@ export function StudentDashboard() {
                                 </span>
                               </CardDescription>
                             </div>
-                            <Badge variant="outline" className="border-primary/30 bg-primary/10 text-primary">
-                              Available
-                            </Badge>
+                            {doneIds.has(exam.id) ? (
+                              <Badge variant="secondary">Completed</Badge>
+                            ) : (
+                              <Badge variant="outline" className="border-primary/30 bg-primary/10 text-primary">
+                                Available
+                              </Badge>
+                            )}
                           </div>
                         </CardHeader>
                         <CardContent>
@@ -171,9 +181,15 @@ export function StudentDashboard() {
                               <span>Duration: {exam.duration_min} min</span>
                               <span>Questions: {exam.question_count}</span>
                             </div>
-                            <Link to={`/exam/${exam.id}`}>
-                              <Button>Start exam</Button>
-                            </Link>
+                            {doneIds.has(exam.id) ? (
+                              <Link to="/results">
+                                <Button variant="outline">View result</Button>
+                              </Link>
+                            ) : (
+                              <Link to={`/exam/${exam.id}`}>
+                                <Button>Start exam</Button>
+                              </Link>
+                            )}
                           </div>
                         </CardContent>
                       </Card>

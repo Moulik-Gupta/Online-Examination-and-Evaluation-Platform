@@ -67,6 +67,12 @@ router.post('/attempts', requireAuth, requireRole('student'), (req, res) => {
     .get(req.user.id, examId);
   if (open) return res.json({ attemptId: open.id, startedAt: open.started_at });
 
+  // One attempt per student per exam: no retakes.
+  const done = db
+    .prepare('SELECT id FROM attempts WHERE user_id = ? AND exam_id = ? AND submitted_at IS NOT NULL')
+    .get(req.user.id, examId);
+  if (done) return res.status(409).json({ error: 'You have already taken this exam.' });
+
   const startedAt = new Date().toISOString();
   const result = db
     .prepare('INSERT INTO attempts (user_id, exam_id, started_at) VALUES (?, ?, ?)')
@@ -125,6 +131,14 @@ router.post('/attempts/:id/submit', requireAuth, requireRole('student'), (req, r
     throw err;
   }
   res.json({ score, total: questions.length });
+});
+
+// Exam ids the signed-in student has already submitted (used to hide "Start").
+router.get('/completed-exams', requireAuth, requireRole('student'), (req, res) => {
+  const rows = db
+    .prepare('SELECT DISTINCT exam_id FROM attempts WHERE user_id = ? AND submitted_at IS NOT NULL')
+    .all(req.user.id);
+  res.json({ examIds: rows.map((r) => r.exam_id) });
 });
 
 export default router;
