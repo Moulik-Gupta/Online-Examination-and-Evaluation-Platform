@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router';
+import { useNavigate, useParams } from 'react-router';
 import { Button } from './ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { RadioGroup, RadioGroupItem } from './ui/radio-group';
@@ -19,52 +19,21 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import PreExamCheck from './PreExamCheck';
+import { api, ApiError } from '../api';
 import { FaceDetector, FilesetResolver } from '@mediapipe/tasks-vision';
 
 const VIOLATION_LIMIT = 5;
 // Ignore violations for a moment after the exam starts, while fullscreen settles.
 const START_GRACE_MS = 2000;
 
-const examData = {
-  title: 'Data Structures & Algorithms',
-  duration: 7200, // 2 hours in seconds
-  questions: [
-    {
-      id: 1,
-      question: 'What is the time complexity of binary search?',
-      options: ['O(n)', 'O(log n)', 'O(n²)', 'O(1)'],
-      correctAnswer: 1,
-    },
-    {
-      id: 2,
-      question: 'Which data structure uses LIFO principle?',
-      options: ['Queue', 'Stack', 'Array', 'Linked List'],
-      correctAnswer: 1,
-    },
-    {
-      id: 3,
-      question: 'What is the worst-case time complexity of Quick Sort?',
-      options: ['O(n log n)', 'O(n²)', 'O(n)', 'O(log n)'],
-      correctAnswer: 1,
-    },
-    {
-      id: 4,
-      question: 'Which traversal method uses a queue?',
-      options: ['Pre-order', 'In-order', 'Post-order', 'Level-order'],
-      correctAnswer: 3,
-    },
-    {
-      id: 5,
-      question: 'What is a perfect binary tree?',
-      options: [
-        'A tree where all nodes have two children',
-        'A tree where all leaf nodes are at the same level',
-        'A tree with maximum nodes at each level',
-        'Both B and C',
-      ],
-      correctAnswer: 3,
-    },
-  ],
+type ExamInfo = { id: number; title: string; duration_min: number };
+type ExamQuestion = { id: number; text: string; options: string[] };
+
+// The server stores start times as a number or a UTC date string. Handle both.
+const parseStart = (value: number | string) => {
+  if (typeof value === 'number') return value;
+  const iso = /[zZ]|[+-]\d\d:?\d\d$/.test(value) ? value : value.replace(' ', 'T') + 'Z';
+  return new Date(iso).getTime();
 };
 
 type Phase = 'check' | 'exam' | 'submitted';
@@ -90,11 +59,17 @@ const violationLabels: Record<ViolationType, string> = {
 
 export function ExamInterface() {
   const navigate = useNavigate();
+  const { examId } = useParams();
+
+  const [exam, setExam] = useState<ExamInfo | null>(null);
+  const [questions, setQuestions] = useState<ExamQuestion[]>([]);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
   const [phase, setPhase] = useState<Phase>('check');
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [answers, setAnswers] = useState<Record<number, number>>({});
-  const [timeRemaining, setTimeRemaining] = useState(examData.duration);
+  const [timeRemaining, setTimeRemaining] = useState(0);
   const [isProctoringActive, setIsProctoringActive] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(true);
   const [flaggedQuestions, setFlaggedQuestions] = useState<Set<number>>(new Set());
@@ -106,11 +81,30 @@ export function ExamInterface() {
   const deadlineRef = useRef(0);
   const graceUntilRef = useRef(0);
   const submittedRef = useRef(false);
+  const attemptIdRef = useRef<number | null>(null);
+  const pendingRef = useRef<Promise<unknown>[]>([]);
   const violationsRef = useRef<Violation[]>([]);
   const navTimeoutRef = useRef<number | undefined>(undefined);
   // These always point at the latest functions, so timers and listeners never go stale.
   const submitRef = useRef<() => void>(() => {});
   const addViolationRef = useRef<(type: ViolationType, detail: string) => void>(() => {});
+
+  // Load the exam and its questions from the server.
+  useEffect(() => {
+    let cancelled = false;
+    api<{ exam: ExamInfo; questions: ExamQuestion[] }>(`/exams/${examId}`)
+      .then((data) => {
+        if (cancelled) return;
+        setExam(data.exam);
+        setQuestions(data.questions);
+      })
+      .catch((err) => {
+        if (!cancelled) setLoadError(err instanceof ApiError ? err.message : 'Could not load the exam.');
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [examId]);
 
   const stopCamera = () => {
     streamRef.current?.getTracks().forEach((track) => track.stop());
@@ -131,6 +125,13 @@ export function ExamInterface() {
       at: Date.now(),
     };
     violationsRef.current = [...violationsRef.current, violation];
+    if (attemptIdRef.current) {
+      const post = api(`/attempts/${attemptIdRef.current}/violations`, {
+        method: 'POST',
+        body: { type, detail },
+      }).catch(() => {});
+      pendingRef.current.push(post);
+    }
     setViolations(violationsRef.current);
 
     const count = violationsRef.current.length;
@@ -148,7 +149,24 @@ export function ExamInterface() {
   addViolationRef.current = addViolation;
 
   // Called by the pre-exam check once the camera works and fullscreen has started.
-  const handleStartExam = (mediaStream: MediaStream) => {
+  const handleStartExam = async (mediaStream: MediaStream) => {
+    if (!exam) return;
+    let attempt: { attemptId: number; startedAt: number | string };
+    try {
+      attempt = await api<{ attemptId: number; startedAt: number | string }>('/attempts', {
+        method: 'POST',
+        body: { examId: exam.id },
+      });
+    } catch (err) {
+      mediaStream.getTracks().forEach((track) => track.stop());
+      if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
+      toast.error('Could not start the exam', {
+        description: err instanceof ApiError ? err.message : 'Check your connection and try again.',
+      });
+      return;
+    }
+    attemptIdRef.current = attempt.attemptId;
+
     streamRef.current = mediaStream;
     setStream(mediaStream);
     setIsProctoringActive(true);
@@ -161,9 +179,10 @@ export function ExamInterface() {
       };
     });
 
+    // The deadline comes from the server's start time, so a refresh resumes correctly.
     graceUntilRef.current = Date.now() + START_GRACE_MS;
-    deadlineRef.current = Date.now() + examData.duration * 1000;
-    setTimeRemaining(examData.duration);
+    deadlineRef.current = parseStart(attempt.startedAt) + exam.duration_min * 60 * 1000;
+    setTimeRemaining(Math.max(0, Math.ceil((deadlineRef.current - Date.now()) / 1000)));
     setPhase('exam');
   };
 
@@ -362,7 +381,7 @@ export function ExamInterface() {
   };
 
   const handleNextQuestion = () => {
-    if (currentQuestion < examData.questions.length - 1) {
+    if (currentQuestion < questions.length - 1) {
       setCurrentQuestion((prev) => prev + 1);
     }
   };
@@ -393,36 +412,66 @@ export function ExamInterface() {
     });
   };
 
+  // Sends the answers to the server and shows the server's score.
+  const sendSubmission = async () => {
+    setSubmitError(null);
+    try {
+      await Promise.allSettled(pendingRef.current); // let queued violations arrive first
+      const result = await api<{ score: number; total: number }>(
+        `/attempts/${attemptIdRef.current}/submit`,
+        { method: 'POST', body: { answers } }
+      );
+      toast.success('Exam submitted', {
+        description: `You answered ${result.score} of ${result.total} correctly.`,
+      });
+      navTimeoutRef.current = window.setTimeout(() => {
+        navigate('/results', {
+          state: { score: result.score, total: result.total, violations: violationsRef.current.length },
+        });
+      }, 1500);
+    } catch (err) {
+      setSubmitError(err instanceof ApiError ? err.message : 'Could not reach the server.');
+    }
+  };
+
   const handleSubmitExam = () => {
     // Guard: the button, the timer and the violation limit can all fire this.
     if (submittedRef.current) return;
     submittedRef.current = true;
-
-    const total = examData.questions.length;
-    const score = examData.questions.filter((q) => answers[q.id] === q.correctAnswer).length;
-    const violationCount = violationsRef.current.length;
 
     stopCamera();
     if (document.fullscreenElement) {
       document.exitFullscreen().catch(() => {});
     }
     setPhase('submitted');
-
-    toast.success('Exam submitted', {
-      description: `You answered ${score} of ${total} correctly.`,
-    });
-    navTimeoutRef.current = window.setTimeout(() => {
-      navigate('/results', { state: { score, total, violations: violationCount } });
-    }, 1500);
+    sendSubmission();
   };
   submitRef.current = handleSubmitExam;
+
+  if (loadError || !exam) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-background text-foreground">
+        <div className="text-center">
+          <p className="text-lg font-medium">{loadError ? 'Could not load this exam' : 'Loading exam…'}</p>
+          {loadError && (
+            <>
+              <p className="mt-1 text-sm text-muted-foreground">{loadError}</p>
+              <Button className="mt-4" onClick={() => navigate('/student')}>
+                Back to dashboard
+              </Button>
+            </>
+          )}
+        </div>
+      </div>
+    );
+  }
 
   if (phase === 'check') {
     return (
       <div className="min-h-screen bg-background text-foreground">
         <PreExamCheck
-          examTitle={examData.title}
-          durationMin={examData.duration / 60}
+          examTitle={exam.title}
+          durationMin={exam.duration_min}
           violationLimit={VIOLATION_LIMIT}
           onStart={handleStartExam}
         />
@@ -435,16 +484,28 @@ export function ExamInterface() {
       <div className="flex min-h-screen items-center justify-center bg-background text-foreground">
         <div className="text-center">
           <CheckCircle2 className="mx-auto h-10 w-10 text-primary" />
-          <p className="mt-4 text-lg font-medium">Exam submitted</p>
-          <p className="mt-1 text-sm text-muted-foreground">Taking you to your results…</p>
+          {submitError ? (
+            <>
+              <p className="mt-4 text-lg font-medium">Your answers are not saved yet</p>
+              <p className="mt-1 text-sm text-muted-foreground">{submitError}</p>
+              <Button className="mt-4" onClick={sendSubmission}>
+                Try again
+              </Button>
+            </>
+          ) : (
+            <>
+              <p className="mt-4 text-lg font-medium">Exam submitted</p>
+              <p className="mt-1 text-sm text-muted-foreground">Taking you to your results…</p>
+            </>
+          )}
         </div>
       </div>
     );
   }
 
-  const progress = ((currentQuestion + 1) / examData.questions.length) * 100;
+  const progress = ((currentQuestion + 1) / questions.length) * 100;
   const answeredCount = Object.keys(answers).length;
-  const currentQuestionData = examData.questions[currentQuestion];
+  const currentQuestionData = questions[currentQuestion];
   const nearLimit = violations.length >= VIOLATION_LIMIT - 1;
 
   return (
@@ -456,9 +517,9 @@ export function ExamInterface() {
             <div className="flex items-center gap-4">
               <Shield className="h-7 w-7 text-primary" />
               <div>
-                <h1 className="text-xl font-bold">{examData.title}</h1>
+                <h1 className="text-xl font-bold">{exam.title}</h1>
                 <p className="text-sm text-muted-foreground">
-                  Question {currentQuestion + 1} of {examData.questions.length}
+                  Question {currentQuestion + 1} of {questions.length}
                 </p>
               </div>
             </div>
@@ -530,7 +591,7 @@ export function ExamInterface() {
                 </div>
               </CardHeader>
               <CardContent>
-                <p className="mb-6 text-lg">{currentQuestionData.question}</p>
+                <p className="mb-6 text-lg">{currentQuestionData.text}</p>
 
                 <RadioGroup
                   value={answers[currentQuestionData.id]?.toString()}
@@ -567,7 +628,7 @@ export function ExamInterface() {
               </Button>
 
               <div className="flex gap-2">
-                {currentQuestion === examData.questions.length - 1 ? (
+                {currentQuestion === questions.length - 1 ? (
                   <Button onClick={handleSubmitExam}>
                     <CheckCircle2 className="mr-2 h-4 w-4" />
                     Submit exam
@@ -649,12 +710,12 @@ export function ExamInterface() {
               <CardHeader>
                 <CardTitle className="text-base">Question navigator</CardTitle>
                 <p className="text-sm text-muted-foreground">
-                  {answeredCount} of {examData.questions.length} answered
+                  {answeredCount} of {questions.length} answered
                 </p>
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-5 gap-2">
-                  {examData.questions.map((q, index) => (
+                  {questions.map((q, index) => (
                     <button
                       key={q.id}
                       onClick={() => setCurrentQuestion(index)}
@@ -695,7 +756,7 @@ export function ExamInterface() {
               <CardContent className="space-y-3">
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Total questions</span>
-                  <span className="font-medium">{examData.questions.length}</span>
+                  <span className="font-medium">{questions.length}</span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Answered</span>
@@ -704,7 +765,7 @@ export function ExamInterface() {
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Not answered</span>
                   <span className="font-medium text-amber-400">
-                    {examData.questions.length - answeredCount}
+                    {questions.length - answeredCount}
                   </span>
                 </div>
                 <div className="flex justify-between text-sm">
